@@ -1,0 +1,13 @@
+model_name: heat_pde
+neurons: 10, 50, 50, 50, 1
+space_bounds: [-1, 1]
+T: 1.0
+rho: 1.0
+test_size: 100000
+activation: GELU
+learning_rate: 0.005
+optimizer: Adam
+nr_steps: 500000
+batch_size: 1024
+eval_steps: 1000
+folder_name: "trained_models/real_world/heat_pde"

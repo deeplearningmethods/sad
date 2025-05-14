@@ -1,0 +1,18 @@
+model_name: black_scholes
+neurons: 10, 200, 300, 200, 1
+space_bounds: [90, 110]
+T: 1.0
+r: 0.05
+c: 0.1
+K: 100.0
+sigma: [0.1000, 0.1444, 0.1889, 0.2333, 0.2778, 0.3222, 0.3667, 0.4111, 0.4556, 0.5000]
+mc_samples: 2400
+mc_rounds: 1000
+test_size: 10000
+activation: GELU
+learning_rate: 0.005
+optimizer: Adam
+nr_steps: 500000
+batch_size: 1024
+eval_steps: 1000
+folder_name: "trained_models/real_world/blackscholes_pde"

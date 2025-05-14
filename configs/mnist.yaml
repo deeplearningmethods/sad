@@ -1,0 +1,9 @@
+model_name: mnist
+neurons: 784, 256, 256, 10
+batch_size: 50
+activation: GELU
+learning_rate: 0.001
+optimizer: Adam
+nr_steps: 30000
+eval_steps: 1000
+folder_name: "trained_models/real_world/mnist"
