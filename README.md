@@ -1,5 +1,5 @@
 # SAD neural networks
-This repository is the official implementation of *SAD Neural Networks: Divergent Gradient Flows and Asymptotic Optimality via o-minimal Structures*. 
+This repository is the official implementation of [**SAD Neural Networks: Divergent Gradient Flows and Asymptotic Optimality via o-minimal Structures**](https://arxiv.org/abs/2505.09572).
 It provides implementations for showing the divergence phenomena of neural networks parameters during the training of:
 - supervised learning with polynomial target function (`polynomial.yaml`) 
 - deep Kolmogorov method for Heat PDE (`heat.yaml`)  
@@ -17,7 +17,7 @@ SAD/
 │   ├── heat.yaml                
 │   └── mnist.yaml               
 │   └── polynomial.yaml           
-├── models/		         # Neural network definition
+├── models/                      # Neural network definition
 │   ├── __init__.py                  
 │   ├── black_scholes_ann.py     
 │   ├── heat_pde_ann.py          
@@ -62,19 +62,23 @@ To reproduce the results reported in the paper for the Heat PDE, Black-Scholes P
 For the polynomial target function, depending on which model is wanted to replicate, specify:
 - the activation function (`softplus`, `GELU`, `ELU`, `swish`, `tanh`)
 - the optimizer (`SGD`, `Adam`)
-- the neural network architecture, given as a comma-separated list of neurons (e.g. `1,10,20,10,1`). 
+- the neural network architecture, given as a comma-separated list of neurons (e.g. `1,10,20,10,1`).
 
-Below are the exact commands used in the paper to train the models with the GELU activation (the other activations are equivalent). Note that the `test_size` argument determines the number of points per input dimension forming a test grid. For instance, in the 2D case, a grid of `test_size x test_size` points results in `test_size^2` total test data.
+Below are the exact commands used in the paper to train the models with the GELU activation (the other activations are equivalent). Note that the `test_size` argument determines the number of points per input dimension forming a test grid. For instance, in the 2D case, a grid of `test_size x test_size` points results in `test_size^2` total test data. To reproduce the GD setup, set the `batch_size` argument to `10000`, ensuring it matches the training set size.
 
 ```train
-# 1D case, SGD
-python main.py --config configs/polynomial.yaml --activation GELU --neurons 1,10,20,10,1 --optimizer SGD --num_runs 20
+# 1D case, GD
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 1,10,20,10,1 --learning_rate 0.001 --optimizer SGD --num_runs 20 --batch_size 10000
+# 2D case, GD
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 2,20,40,20,1 --learning_rate 0.001 --optimizer SGD --num_runs 20 --batch_size 10000 --test_size 100
+# 4D case, GD
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 4,20,40,20,1 --learning_rate 0.001 --optimizer SGD --num_runs 20 --batch_size 10000 --test_size 15
 # 1D case, Adam
-python main.py --config configs/polynomial.yaml --activation GELU --neurons 1,10,20,10,1 --learning_rate 0.005 --optimizer Adam --num_runs 20
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 1,10,20,10,1 --learning_rate 0.005 --optimizer Adam --num_runs 20 
 # 2D case, Adam
-python main.py --config configs/polynomial.yaml --activation GELU --neurons 2,20,40,20,1 --learning_rate 0.005 --test_size 100 --optimizer Adam --num_runs 20
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 2,20,40,20,1 --learning_rate 0.005 --optimizer Adam --num_runs 20 --test_size 100
 # 4D case, Adam
-python main.py --config configs/polynomial.yaml --activation GELU --neurons 4,20,40,20,1 --learning_rate 0.005 --test_size 15 --optimizer Adam --num_runs 20 
+python main.py --config configs/polynomial.yaml --activation GELU --neurons 4,20,40,20,1 --learning_rate 0.005 --optimizer Adam --num_runs 20 --test_size 15
 ```
 
 
@@ -98,12 +102,21 @@ python main.py \
 ```eval
 python main.py \
 	--load_multiple_results \
-	trained_models/polynomial/swish_SGD,trained_models/polynomial/softplus_SGD,trained_models/polynomial/GELU_SGD,trained_models/polynomial/ELU_SGD,trained_models/polynomial/tanh_SGD:\
+	trained_models/polynomial/swish_GD,trained_models/polynomial/softplus_GD,trained_models/polynomial/GELU_GD,trained_models/polynomial/ELU_GD,trained_models/polynomial/tanh_GD:\
+	trained_models/polynomial/swish_in2_GD,trained_models/polynomial/softplus_in2_GD,trained_models/polynomial/GELU_in2_GD,trained_models/polynomial/ELU_in2_GD,trained_models/polynomial/tanh_in2_GD:\
+	trained_models/polynomial/swish_in4_GD,trained_models/polynomial/softplus_in4_GD,trained_models/polynomial/GELU_in4_GD,trained_models/polynomial/ELU_in4_GD,trained_models/polynomial/tanh_in4_GD \
+	--legend "Swish,Softplus,GELU,ELU,Hyperbolic tangent" \
+	--plot_scale log 
+```
+
+```eval
+python main.py \
+	 --load_multiple_results \
 	trained_models/polynomial/swish_Adam,trained_models/polynomial/softplus_Adam,trained_models/polynomial/GELU_Adam,trained_models/polynomial/ELU_Adam,trained_models/polynomial/tanh_Adam:\
 	trained_models/polynomial/swish_in2_Adam,trained_models/polynomial/softplus_in2_Adam,trained_models/polynomial/GELU_in2_Adam,trained_models/polynomial/ELU_in2_Adam,trained_models/polynomial/tanh_in2_Adam:\
 	trained_models/polynomial/swish_in4_Adam,trained_models/polynomial/softplus_in4_Adam,trained_models/polynomial/GELU_in4_Adam,trained_models/polynomial/ELU_in4_Adam,trained_models/polynomial/tanh_in4_Adam \
 	--legend "Swish,Softplus,GELU,ELU,Hyperbolic tangent" \
-	--plot_scale log
+	--plot_scale log 
 ```
 
 
@@ -116,9 +129,9 @@ python main.py --config configs/heat.yaml --load_results 1
 For polynomial tasks, also specify the folder name. 
 
 ```eval
-python main.py --config configs/polynomial.yaml --load_results 1 --folder_name trained_models/polynomial/GELU_SGD
+python main.py --config configs/polynomial.yaml --load_results 1 --folder_name trained_models/polynomial/GELU_GD
 ```
-Each activation has trained models with SGD and Adam for 1D inputs, and Adam for 2D and 4D inputs.
+Each activation has trained models with GD and Adam for 1D, 2D and 4D inputs.
 
 
 

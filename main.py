@@ -2,7 +2,7 @@ import torch
 import argparse
 
 from models import Polynomial_ANN, Heat_PDE_ANN, BlackScholes_ANN, MNIST_ANN
-from utils import load_config, override_config, load_experiment, plot_mean_norm_and_loss
+from utils import load_config, override_config, load_experiment, plot_mean_norm_and_loss, plot_grad_norms
 
 
 def run_simulation(config_path, **kwargs):
@@ -17,6 +17,20 @@ def run_simulation(config_path, **kwargs):
         legend = [leg.split(',') for leg in legend.split(':')]
         folder_name = "" if "folder_name" not in config  else config["folder_name"]
         plot_mean_norm_and_loss(
+            paths, 
+            scale= config["plot_scale"], 
+            folder_name= folder_name, 
+            legend=legend
+        )
+        return
+    
+    if config["load_grad"] != "":
+        raw_paths = config["load_grad"]
+        legend = config["legend"] 
+        paths = [group.split(',') for group in raw_paths.split(':')]
+        legend = [leg.split(',') for leg in legend.split(':')]
+        folder_name = "" if "folder_name" not in config  else config["folder_name"]
+        plot_grad_norms(
             paths, 
             scale= config["plot_scale"], 
             folder_name= folder_name, 
@@ -110,6 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_runs", type=int, default=5, help="Number of runs (default: 5)")
     parser.add_argument("--load_results", type=int, choices=[0, 1], default=0, help="Load and plot results instead of training (1 = True, 0 = False)")
     parser.add_argument("--load_multiple_results", type=str, default="", help="Comma-separated list of folders")
+    parser.add_argument("--load_grad", type=str, default="", help="Comma-separated list of folders")
     parser.add_argument("--realization", type=int,choices=[0, 1], default=0, help="Plot realization function in the case of polynomials (1 = True, 0 = False)")
     parser.add_argument("--plot_scale", type=str, choices=["linear", "log"], default="linear", help="Scale for the plot of test loss")
     parser.add_argument("--folder_name", type=str, help="Folder where model and plots are saved")

@@ -33,7 +33,10 @@ class Model(nn.Module):
             "mish": nn.Mish(),
             "swish": nn.SiLU(),
             'ELU': nn.ELU(),
-            "softsign": nn.Softsign()
+            "softsign": nn.Softsign(),
+            "ReLU": nn.ReLU(),
+            "SiLU": nn.SiLU(),
+            "identity": nn.Identity()
         }
 
     def forward(self, data: torch.Tensor) -> torch.Tensor: 
@@ -90,7 +93,8 @@ class Model(nn.Module):
         step_list = []
         test_loss_list = []
         train_loss_list = []
-        
+        gradient_norm_list = []
+
         norm_list.append(torch.linalg.vector_norm(torch.cat([p.flatten() for p in self.parameters()])).cpu().detach().numpy().item()) # Record initial parameter norm
         steps = 0
 
@@ -100,6 +104,11 @@ class Model(nn.Module):
             data = self.data_sampler(batch_size)  # Sample training data
             loss = self.loss(data)
             loss.backward()
+            if (n + 1) % eval_steps == 0:
+                with torch.no_grad():
+                    grad_norm = torch.linalg.vector_norm(torch.cat([p.grad.flatten() for p in self.parameters() if p.grad is not None])).cpu().item()
+                    gradient_norm_list.append(grad_norm)
+
             optimizer.step()
             steps += 1
 
@@ -117,7 +126,7 @@ class Model(nn.Module):
         with torch.no_grad():
             last_output = self.forward(self.test_data).cpu().detach().numpy()  # Forward pass on test data
             
-        return {"steps": step_list, "norms": norm_list, "test_loss": test_loss_list, "train_loss": train_loss_list, "last_output": last_output}
+        return {"steps": step_list, "norms": norm_list, "test_loss": test_loss_list, "train_loss": train_loss_list, "last_output": last_output, "grad_norms": gradient_norm_list}
     
     def train_multiple_runs(self, optimizer, nr_steps, batch_size, lr, eval_steps=1000, num_runs=5):
         """
@@ -163,7 +172,7 @@ class Model(nn.Module):
             print(f"Experiment saved in '{folder_name}'")
 
 
-    def plot_graph(self, scale="linear", save=True, ylim_value=None, folder_name=None, realization = False):
+    def plot_graph(self, scale="linear", save=False, ylim_value=None, folder_name=None, realization = False):
         """
         Plot the training process including weight norm and loss.
     
@@ -180,22 +189,28 @@ class Model(nn.Module):
         
         ## First subplot - Norm of model parameters
         ax1 = axes[0]
+
         for run in self.runs:
-            ax1.plot([0] + run["steps"], run["norms"],)
+            ax1.plot( 0.001*np.array(run["steps"]),np.array(run["norms"][1:]),)
         
-        ax1.set_xlim(0, max(self.runs[0]["steps"]))
+        #ax1.set_xscale("log")
+        #ax1.plot(0.001*np.array(run["steps"]),8+np.sqrt(0.00001*np.array(run["steps"])),label='0.001 sqrt(x)')
+        #ax1.plot( 0.001*np.array(run["steps"]),8+0.5*np.log(0.001*np.array(run["steps"])),label='0.5 ln(x)')
+        #ax1.legend()
+
+        #ax1.set_xlim(1, max(self.runs[0]["steps"]))
         ax1.set_xlabel("Gradient steps")
         ax1.set_ylabel("Parameter Norm")
-        #ax1.text(0.1, 0.85, r"$\|\Theta\|$", transform=ax1.transAxes, bbox=props)
-    
+        
         ## Second subplot - Loss evolution
         ax2 = axes[1]
         for run in self.runs:
-            ax2.plot(run["steps"][::4], run["test_loss"][::4],)
+            #ax2.plot(run["steps"][::4], run["grad_norms"][::8000])
+            ax2.plot(run["steps"][::4], run["test_loss"][::4])
        
         ax2.set_xlabel("Gradient steps")
         ax2.set_ylabel("Test loss")
-        ax2.set_yscale(scale)
+        ax2.set_yscale("log")
         if ylim_value is not None:
             ax2.set_ylim(top = ylim_value)
         #ax2.text(0.8, 0.85, r"$\mathcal{L}(\Theta)$", transform=ax2.transAxes, bbox=props)

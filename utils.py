@@ -88,14 +88,13 @@ def ema_smooth(data, decay=0.9):
        smoothed[t] = decay * smoothed[t-1] + (1 - decay) * data[t]
    return smoothed
 
-
 def plot_mean_norm_and_loss(folder_paths, scale = "linear", folder_name="", legend = []):
      """
      Plot the mean of 'norm' and 'loss' from multiple saved models in the same figure.
      """
      
      columns = len(folder_paths)
-     fig_size = (5*columns, 7)
+     fig_size = (5*columns, 8)
      fig, axes = plt.subplots(2, columns, figsize=fig_size)  # Create subplots
      
      # Ensure axes is a 2D array even if columns=1
@@ -111,29 +110,34 @@ def plot_mean_norm_and_loss(folder_paths, scale = "linear", folder_name="", lege
              # Extract norms and test loss from the 'runs' dictionary
              all_norms = [run["norms"] for run in model.runs]
              all_loss = [run["train_loss"] for run in model.runs]
+             all_grad_norms = [run["grad_norms"] for run in model.runs if "grad_norms" in run]
              if 'pde' in folder_paths[column][i]:
                  all_loss = [run["test_loss"] for run in model.runs]
              # Convert lists to numpy arrays
              norm_matrix = np.array(all_norms)
              loss_matrix = np.array(all_loss)
+             grad_matrix = np.array(all_grad_norms)
              
              # Compute mean at each step
              norm_mean = np.mean(norm_matrix, axis=0)
              loss_mean = np.mean(loss_matrix, axis=0)
+             grad_mean = np.mean(grad_matrix, axis=0)
              
              # Common steps (assuming all runs share the same step sequence)
              common_steps = model.runs[0]["steps"]
              steps.append(max(common_steps))
              
              # Plot mean norm
-             axes[0,column].plot([0] + common_steps, norm_mean, label=legend[column if len(legend)>column else 0][i])
-             
+             axes[0,column].plot([0]+common_steps, norm_mean, label=legend[column if len(legend)>column else 0][i])
              smoothed_loss = ema_smooth(loss_mean, decay=0.95)
              axes[1,column].plot(common_steps[::2], smoothed_loss[::2], label=legend[column if len(legend)>column else 0][i])
              
+          
+         
          # Customize Norm Plot
-         axes[0,column].set_xlim(0, max(steps))
-         axes[0,column].set_ylim(0)
+         axes[0,column].set_xlim(1, max(steps))
+         #axes[0,column].set_ylim(0)
+         #axes[0,column].set_yscale("log")
      
          # Customize Loss Plot
          axes[1,column].set_xlim(0, max(steps))
@@ -146,7 +150,7 @@ def plot_mean_norm_and_loss(folder_paths, scale = "linear", folder_name="", lege
      axes[0,0].set_ylabel("parameter norm")
      axes[1,0].set_ylabel("loss")
      for l in range(len(legend)):
-         axes[0,l].legend()
+           axes[0,l].legend(fontsize=8)
      
      # Save the plot if required
      if folder_name != "":
@@ -157,5 +161,80 @@ def plot_mean_norm_and_loss(folder_paths, scale = "linear", folder_name="", lege
      # Show the plot
      plt.tight_layout()
      plt.show()
-     
+
+
+def plot_grad_norms(folder_paths, scale="linear", folder_name="", legend=[]):
+    """
+    Plot the mean of 'grad_norms' from multiple saved models.
+    """
+    columns = len(folder_paths)
+    fig_size = (5*columns, 4)
+    fig, axes = plt.subplots(1, columns, figsize=fig_size)
+
+    # Ensure axes is iterable even if columns=1
+    if columns == 1:
+        axes = [axes]
+
+    for column in range(columns):
+        steps = []
+        for i in range(len(folder_paths[column])):
+            # Load model and training data
+            model = load_experiment(folder_paths[column][i])
+
+            # Extract grad norms if present
+            all_grad_norms = [run["grad_norms"] for run in model.runs if "grad_norms" in run]
+            if not all_grad_norms:  # skip if no grad norms
+                continue
+
+            grad_matrix = np.array(all_grad_norms)
+            grad_mean = np.mean(grad_matrix, axis=0)
+
+            # Steps
+            common_steps = model.runs[0]["steps"]
+            steps.append(max(common_steps))
+
+            # Plot mean grad norm
+            axes[column].plot(range(1,500000+1,4000), grad_mean[::4000], 
+                              label=legend[column][i] if len(legend) > column and i < len(legend[column]) else None)
+
+        # Customize axes
+        axes[column].set_xlim(1, max(steps))
+        axes[column].set_xlabel("gradient steps")
+        axes[column].set_yscale(scale)
+        axes[column].set_ylabel("grad norm")
+        axes[column].legend(fontsize=8)
+
+    # Save the plot if required
+    if folder_name != "":
+        os.makedirs(folder_name, exist_ok=True)
+        file_name = f"{folder_name}/grad_norms_plot.pdf"
+        plt.savefig(file_name, bbox_inches="tight")
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
          
