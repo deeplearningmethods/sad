@@ -8,6 +8,8 @@ It provides implementations for showing the divergence phenomena of neural netwo
 
 In the simulations involving polynomials, we validate the results established in the paper (see Corollary 3.6). The real-world examples (Heat PDE, Black-Scholes PDE and MNIST classification) confirm the same behavior, suggesting that the phenomena extend beyond the theoretical setting and are relevant in broader practical contexts. 
 
+Original developer and maintainer: Davide Gallon (@davidegallon). Davide wrote the experimental software for the NeurIPS 2025 paper, including the training and evaluation code for the polynomial regression, Heat PDE, Black–Scholes PDE, and MNIST experiments.
+
 ## Repository Structure
 ```
 SAD/
